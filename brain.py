@@ -6,6 +6,9 @@ import anthropic
 
 STYLE_FILE = Path(__file__).parent / "style_data" / "my_posts.txt"
 
+MODELS = ["claude-sonnet-4-6", "claude-opus-4-8", "claude-opus-4-7"]
+REQUEST_TIMEOUT = 30.0
+
 
 def _load_style_samples() -> str:
     if not STYLE_FILE.exists():
@@ -47,7 +50,19 @@ def _build_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(
         api_key=os.environ["ANTHROPIC_API_KEY"],
         base_url=os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
+        timeout=REQUEST_TIMEOUT,
     )
+
+
+def _create_with_fallback(client: anthropic.Anthropic, **kwargs) -> anthropic.types.Message:
+    last_error = None
+    for model in MODELS:
+        try:
+            return client.messages.create(model=model, **kwargs)
+        except (anthropic.APITimeoutError, anthropic.InternalServerError) as e:
+            last_error = e
+            continue
+    raise last_error
 
 
 def _extract_text(message) -> str:
@@ -66,8 +81,8 @@ def _system_prompt() -> str:
 
 def generate_post(raw_content: str) -> str:
     client = _build_client()
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
+    message = _create_with_fallback(
+        client,
         max_tokens=1024,
         system=_system_prompt(),
         messages=[
@@ -91,8 +106,8 @@ def generate_post_from_image(image_bytes: bytes, caption: str = "", media_type: 
     if caption.strip():
         user_text += f"\n\nGhi chú thêm từ mình: {caption.strip()}"
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
+    message = _create_with_fallback(
+        client,
         max_tokens=1024,
         system=_system_prompt(),
         messages=[
