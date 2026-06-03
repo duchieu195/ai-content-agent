@@ -4,7 +4,7 @@ from pathlib import Path
 
 import anthropic
 
-STYLE_FILE = Path(__file__).parent / "style_data" / "my_posts.txt"
+STYLE_FILE = Path(__file__).parent / "style_data" / "style_summary.txt"
 
 MODELS = ["claude-sonnet-4-6", "claude-opus-4-8", "claude-opus-4-7"]
 REQUEST_TIMEOUT = 30.0
@@ -40,7 +40,7 @@ Không giải thích, không thêm ghi chú, không bọc trong markdown code bl
 dung tích, mùi hương, thành phần nổi bật in trên bao bì. Dùng các thông tin đó làm \
 nguyên liệu cho bài viết. Nếu thông tin nào không đọc rõ từ ảnh, đừng bịa ra.
 
-## Các bài viết mẫu để học phong cách
+## Phong cách viết cần bắt chước
 
 {style_samples}
 """
