@@ -47,8 +47,11 @@ nguyên liệu cho bài viết. Nếu thông tin nào không đọc rõ từ ả
 
 
 def _build_client() -> anthropic.Anthropic:
+    api_key = os.environ.get("ANTHROPIC_AUTH_TOKEN") or os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError("ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY must be set")
     return anthropic.Anthropic(
-        api_key=os.environ["ANTHROPIC_API_KEY"],
+        api_key=api_key,
         base_url=os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
         timeout=REQUEST_TIMEOUT,
     )
