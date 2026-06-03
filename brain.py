@@ -1,8 +1,10 @@
 import base64
+import io
 import os
 from pathlib import Path
 
 import anthropic
+from PIL import Image
 
 STYLE_FILE = Path(__file__).parent / "style_data" / "style_summary.txt"
 
@@ -44,6 +46,14 @@ nguyên liệu cho bài viết. Nếu thông tin nào không đọc rõ từ ả
 
 {style_samples}
 """
+
+
+def _resize_image(image_bytes: bytes, max_size: int = 1024) -> tuple[bytes, str]:
+    img = Image.open(io.BytesIO(image_bytes))
+    img.thumbnail((max_size, max_size), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=85)
+    return buf.getvalue(), "image/jpeg"
 
 
 def _build_client() -> anthropic.Anthropic:
@@ -114,6 +124,8 @@ def generate_post_from_image(image_bytes: bytes, caption: str = "", media_type: 
     )
     if caption.strip():
         user_text += f"\n\nGhi chú thêm từ mình: {caption.strip()}"
+
+    image_bytes, media_type = _resize_image(image_bytes)
 
     message = _create_with_fallback(
         client,
