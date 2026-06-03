@@ -75,11 +75,17 @@ def _extract_text(message) -> str:
     return ""
 
 
-def _system_prompt() -> str:
+def _system_prompt_blocks() -> list:
     style_samples = _load_style_samples()
     if not style_samples:
         style_samples = "(Chưa có bài mẫu — viết theo phong cách tự nhiên, gần gũi trên Facebook.)"
-    return SYSTEM_PROMPT.format(style_samples=style_samples)
+    return [
+        {
+            "type": "text",
+            "text": SYSTEM_PROMPT.format(style_samples=style_samples),
+            "cache_control": {"type": "ephemeral"},
+        }
+    ]
 
 
 def generate_post(raw_content: str) -> str:
@@ -87,7 +93,7 @@ def generate_post(raw_content: str) -> str:
     message = _create_with_fallback(
         client,
         max_tokens=1024,
-        system=_system_prompt(),
+        system=_system_prompt_blocks(),
         messages=[
             {
                 "role": "user",
@@ -112,7 +118,7 @@ def generate_post_from_image(image_bytes: bytes, caption: str = "", media_type: 
     message = _create_with_fallback(
         client,
         max_tokens=1024,
-        system=_system_prompt(),
+        system=_system_prompt_blocks(),
         messages=[
             {
                 "role": "user",
