@@ -4,11 +4,12 @@ import os
 from pathlib import Path
 
 import anthropic
+import httpx
 from PIL import Image
 
 STYLE_FILE = Path(__file__).parent / "style_data" / "style_summary.txt"
 
-MODELS = ["claude-sonnet-4-6", "claude-opus-4-8", "claude-opus-4-7"]
+MODELS = ["claude-sonnet-4-6", "claude-opus-4-7"]
 REQUEST_TIMEOUT = 30.0
 
 
@@ -60,10 +61,21 @@ def _build_client() -> anthropic.Anthropic:
     api_key = os.environ.get("ANTHROPIC_AUTH_TOKEN") or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise RuntimeError("ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY must be set")
+
+    class _FilterTransport(httpx.HTTPTransport):
+        # Some proxy providers block requests with x-stainless-* telemetry headers
+        def handle_request(self, request):
+            filtered = [(k, v) for k, v in request.headers.raw if not k.lower().startswith(b"x-stainless")]
+            filtered = [(k, v) for k, v in filtered if k.lower() != b"user-agent"]
+            filtered.append((b"user-agent", b"python-httpx"))
+            request.headers = httpx.Headers(filtered)
+            return super().handle_request(request)
+
     return anthropic.Anthropic(
         api_key=api_key,
         base_url=os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
         timeout=REQUEST_TIMEOUT,
+        http_client=httpx.Client(transport=_FilterTransport()),
     )
 
 
